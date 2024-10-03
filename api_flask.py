@@ -15,7 +15,7 @@ def extract_text_from_pdf(pdf_file_path):
             text += page.extract_text()
     return text
 
-# Function to compare PDF content with search results
+# Function to compare PDF content with search results 
 def compare_with_search_results(pdf_text, serper_api_key, query):
     headers = {"X-API-KEY": serper_api_key}
     response = requests.get(f"https://google.serper.dev/search?q={query}", headers=headers)
@@ -24,21 +24,29 @@ def compare_with_search_results(pdf_text, serper_api_key, query):
     tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
     model = BertForSequenceClassification.from_pretrained('bert-base-uncased')
     
-    similarities = []
+
+
+    similarity_results = []
+    
     for result in search_results:
         search_text = result['snippet']
+        search_title = result['title']  # Extraction du titre du résultat
+        search_link = result['link']
+        
         inputs = tokenizer(pdf_text, search_text, return_tensors='pt', padding=True, truncation=True)
         
         with torch.no_grad():
             outputs = model(**inputs)
             similarity = torch.softmax(outputs.logits, dim=1)
         
-        similarities.append({
-            'title': result['title'],
-            'similarity_percentage': (similarity[0][1].item()) * 100
-        })
+        similarity_percentage = (similarity[0][1].item()) * 100
+        similarity_results.append({
+            'title':search_title, 
+            'link':search_link, 
+            'similarity_percentage': similarity_percentage})
     
-    return similarities
+    
+    return similarity_results
 
 #to verify wheter API is working
 @app.route('/', methods = ['GET'])
